@@ -6,6 +6,7 @@
     <title>Register Your Country</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body class="register-page">
@@ -18,10 +19,10 @@
         <div class="qr-section">
             <div class="qr-container">
                 <div class="qr-code" id="qrCode">
-                    <!-- QR code will be generated here -->
+                    <!-- QR code will appear here -->
                     <div class="qr-placeholder">
                         <i class="fas fa-qrcode"></i>
-                        <p>Scan me with your phone</p>
+                        <p>Generating QR code...</p>
                     </div>
                 </div>
                 <div class="qr-instructions">
@@ -144,35 +145,17 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
     <script>
         // Generate QR code on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Generate QR code
-            const qrElement = document.getElementById('qrCode');
+            // Get the current page URL
             const currentUrl = window.location.href;
             
-            // Clear placeholder
-            qrElement.innerHTML = '';
-            
-            // Create canvas for QR code
-            const canvas = document.createElement('canvas');
-            qrElement.appendChild(canvas);
-            
-            QRCode.toCanvas(canvas, currentUrl, {
-                width: 200,
-                height: 200,
-                margin: 1,
-                color: {
-                    dark: '#1a237e',
-                    light: '#ffffff'
-                }
-            }, function(error) {
-                if (error) console.error(error);
-            });
-            
-            // Set direct link
+            // Display the URL in the direct link field
             document.getElementById('directLink').value = currentUrl;
+            
+            // Generate QR code
+            generateQRCode(currentUrl);
             
             // Handle form submission
             document.getElementById('countryForm').addEventListener('submit', function(e) {
@@ -196,12 +179,59 @@
             });
         });
         
+        function generateQRCode(url) {
+            const qrElement = document.getElementById('qrCode');
+            
+            // Clear the placeholder
+            qrElement.innerHTML = '';
+            
+            // Create canvas element
+            const canvas = document.createElement('canvas');
+            qrElement.appendChild(canvas);
+            
+            // Generate QR code
+            QRCode.toCanvas(canvas, url, {
+                width: 200,
+                margin: 1,
+                color: {
+                    dark: '#1a237e',      // Dark blue squares
+                    light: '#ffffff'      // White background
+                }
+            }, function(error) {
+                if (error) {
+                    console.error('QR Code error:', error);
+                    qrElement.innerHTML = `
+                        <div class="qr-placeholder" style="color: #f44336;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>QR Code failed to load</p>
+                            <p style="font-size: 0.8em;">Use the link below instead</p>
+                        </div>
+                    `;
+                } else {
+                    console.log('QR Code generated successfully!');
+                }
+            });
+        }
+        
         function copyLink() {
             const linkInput = document.getElementById('directLink');
             linkInput.select();
             linkInput.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(linkInput.value);
-            alert('Link copied to clipboard!');
+            
+            try {
+                // Modern clipboard API
+                navigator.clipboard.writeText(linkInput.value).then(function() {
+                    alert('Link copied to clipboard!');
+                }).catch(function(err) {
+                    // Fallback for older browsers
+                    document.execCommand('copy');
+                    alert('Link copied to clipboard!');
+                });
+            } catch (err) {
+                // Final fallback
+                document.execCommand('copy');
+                alert('Link copied to clipboard!');
+            }
         }
         
         function resetForm() {
@@ -231,8 +261,14 @@
             
             console.log('Registered:', registration);
             
-            // Show confirmation
-            alert(`Thank you ${name}! Your country (${country}) has been added to the map.`);
+            // Update the main page if it's open
+            updateMainPage();
+        }
+        
+        function updateMainPage() {
+            // This would update the main display page
+            // In a real app, you might use localStorage events or a backend
+            console.log('Registration added - main page should refresh');
         }
     </script>
 </body>
