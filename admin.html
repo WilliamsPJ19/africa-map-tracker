@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Africa Map Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-page">
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1><i class="fas fa-cog"></i> Admin Dashboard</h1>
+            <p class="subtitle">Manage African Origins Map Data</p>
+        </header>
+
+        <div class="admin-controls">
+            <div class="control-card">
+                <h2><i class="fas fa-database"></i> Data Management</h2>
+                <button onclick="exportData()" class="admin-btn">
+                    <i class="fas fa-download"></i> Export Data
+                </button>
+                <button onclick="importData()" class="admin-btn">
+                    <i class="fas fa-upload"></i> Import Data
+                </button>
+                <button onclick="clearData()" class="admin-btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear All Data
+                </button>
+            </div>
+
+            <div class="control-card">
+                <h2><i class="fas fa-chart-bar"></i> Statistics</h2>
+                <div class="stats-grid">
+                    <div class="admin-stat">
+                        <span class="admin-stat-number" id="adminTotalParticipants">0</span>
+                        <span class="admin-stat-label">Total Participants</span>
+                    </div>
+                    <div class="admin-stat">
+                        <span class="admin-stat-number" id="adminUniqueCountries">0</span>
+                        <span class="admin-stat-label">Unique Countries</span>
+                    </div>
+                    <div class="admin-stat">
+                        <span class="admin-stat-number" id="adminTodayRegistrations">0</span>
+                        <span class="admin-stat-label">Today's Registrations</span>
+                    </div>
+                    <div class="admin-stat">
+                        <span class="admin-stat-number" id="adminAvgPerCountry">0</span>
+                        <span class="admin-stat-label">Avg per Country</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <div class="data-card">
+                <h2><i class="fas fa-list"></i> All Registrations</h2>
+                <div class="table-controls">
+                    <input type="text" id="searchInput" placeholder="Search by name or country...">
+                    <select id="countryFilter">
+                        <option value="">All Countries</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="registrationsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Country</th>
+                                <th>Time</th>
+                                <th>Message</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="prevBtn" disabled><i class="fas fa-chevron-left"></i> Previous</button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button id="nextBtn" disabled>Next <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="charts-card">
+                <h2><i class="fas fa-chart-pie"></i> Analytics</h2>
+                <div class="chart-container">
+                    <canvas id="countryChart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="timeChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-footer">
+            <a href="index.html" class="footer-link">
+                <i class="fas fa-eye"></i> View Live Map
+            </a>
+            <a href="register.html" class="footer-link">
+                <i class="fas fa-qrcode"></i> Registration Page
+            </a>
+            <button onclick="refreshAdminData()" class="footer-link">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+            <button onclick="resetDemoData()" class="footer-link">
+                <i class="fas fa-magic"></i> Load Demo Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+    <script>
+        let allRegistrations = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let countryChart = null;
+        let timeChart = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAdminData();
+            setupEventListeners();
+            initializeCharts();
+        });
+
+        function loadAdminData() {
+            const data = JSON.parse(localStorage.getItem('africaMapData') || '{"registrations":[]}');
+            allRegistrations = data.registrations;
+            updateAdminStats();
+            populateCountryFilter();
+            renderTable();
+        }
+
+        function updateAdminStats() {
+            const total = allRegistrations.length;
+            
+            // Count unique countries
+            const countries = new Set(allRegistrations.map(r => r.country));
+            const uniqueCountries = countries.size;
+            
+            // Count today's registrations
+            const today = new Date().toDateString();
+            const todayRegistrations = allRegistrations.filter(r => 
+                new Date(r.timestamp).toDateString() === today
+            ).length;
+            
+            // Calculate average per country
+            const avgPerCountry = uniqueCountries > 0 ? (total / uniqueCountries).toFixed(1) : "0";
+            
+            // Update UI
+            document.getElementById('adminTotalParticipants').textContent = total;
+            document.getElementById('adminUniqueCountries').textContent = uniqueCountries;
+            document.getElementById('adminTodayRegistrations').textContent = todayRegistrations;
+            document.getElementById('adminAvgPerCountry').textContent = avgPerCountry;
+            
+            // Update charts
+            updateCharts();
+        }
+
+        function populateCountryFilter() {
+            const filter = document.getElementById('countryFilter');
+            const countries = [...new Set(allRegistrations.map(r => r.country))].sort();
+            
+            // Clear existing options except first
+            while (filter.options.length > 1) {
+                filter.remove(1);
+            }
+            
+            // Add country options
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                filter.appendChild(option);
+            });
+        }
+
+        function renderTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const countryFilter = document.getElementById('countryFilter').value;
+            
+            // Filter registrations
+            let filtered = allRegistrations.filter(reg => {
+                const matchesSearch = !searchTerm || 
+                    reg.name.toLowerCase().includes(searchTerm) ||
+                    reg.country.toLowerCase().includes(searchTerm) ||
+                    (reg.message && reg.message.toLowerCase().includes(searchTerm));
+                
+                const matchesCountry = !countryFilter || reg.country === countryFilter;
+                
+                return matchesSearch && matchesCountry;
+            });
+            
+            // Sort by most recent first
+            filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Calculate pagination
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filtered.slice(startIndex, endIndex);
+            
+            // Update table
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            pageData.forEach(reg => {
+                const row = document.createElement('tr');
+                const time = new Date(reg.timestamp).toLocaleString();
+                
+                row.innerHTML = `
+                    <td>${reg.id}</td>
+                    <td>${reg.name}</td>
+                    <td><span class="country-badge">${reg.country}</span></td>
+                    <td>${time}</td>
+                    <td>${reg.message || '-'}</td>
+                    <td>
+                        <button onclick="deleteRegistration(${reg.id})" class="action-btn btn-danger">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Update pagination controls
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+        }
+
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', function() {
+                currentPage = 1;
+                renderTable();
+            });
+            
+            document.getElementById('countryFilter').addEventListener('change', function() {
+                currentPage = 1;
+                renderTable();
+            });
+            
+            document.getElementById('prevBtn').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            });
+            
+            document.getElementById('nextBtn').addEventListener('click', function() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const countryFilter = document.getElementById('countryFilter').value;
+                let filtered = allRegistrations.filter(reg => {
+                    const matchesSearch = !searchTerm || 
+                        reg.name.toLowerCase().includes(searchTerm) ||
+                        reg.country.toLowerCase().includes(searchTerm);
+                    const matchesCountry = !countryFilter || reg.country === countryFilter;
+                    return matchesSearch && matchesCountry;
+                });
+                const totalPages = Math.ceil(filtered.length / itemsPerPage);
+                
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            });
+        }
+
+        function initializeCharts() {
+            const ctx1 = document.getElementById('countryChart').getContext('2d');
+            const ctx2 = document.getElementById('timeChart').getContext('2d');
+            
+            countryChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Participants',
+                        data: [],
+                        backgroundColor: '#4CAF50',
+                        borderColor: '#388E3C',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        title: {
+                            display: true,
+                            text: 'Participants by Country'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            timeChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Registrations per Hour',
+                        data: [],
+                        backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                        borderColor: '#2196F3',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        title: {
+                            display: true,
+                            text: 'Registration Timeline'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            if (!allRegistrations.length) return;
+            
+            // Update country chart
+            const countryCounts = {};
+            allRegistrations.forEach(reg => {
+                countryCounts[reg.country] = (countryCounts[reg.country] || 0) + 1;
+            });
+            
+            const sortedCountries = Object.entries(countryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            countryChart.data.labels = sortedCountries.map(item => item[0]);
+            countryChart.data.datasets[0].data = sortedCountries.map(item => item[1]);
+            countryChart.update();
+            
+            // Update time chart (last 24 hours)
+            const now = new Date();
+            const hours = [];
+            const counts = [];
+            
+            for (let i = 23; i >= 0; i--) {
+                const hour = new Date(now);
+                hour.setHours(now.getHours() - i, 0, 0, 0);
+                const hourStart = new Date(hour);
+                const hourEnd = new Date(hour);
+                hourEnd.setHours(hour.getHours() + 1);
+                
+                const hourRegistrations = allRegistrations.filter(reg => {
+                    const regTime = new Date(reg.timestamp);
+                    return regTime >= hourStart && regTime < hourEnd;
+                });
+                
+                hours.push(hour.getHours().toString().padStart(2, '0') + ':00');
+                counts.push(hourRegistrations.length);
+            }
+            
+            timeChart.data.labels = hours;
+            timeChart.data.datasets[0].data = counts;
+            timeChart.update();
+        }
+
+        function deleteRegistration(id) {
+            if (!confirm('Are you sure you want to delete this registration?')) return;
+            
+            allRegistrations = allRegistrations.filter(reg => reg.id !== id);
+            
+            // Save to localStorage
+            const data = JSON.parse(localStorage.getItem('africaMapData') || '{"registrations":[]}');
+            data.registrations = allRegistrations;
+            localStorage.setItem('africaMapData', JSON.stringify(data));
+            
+            // Update UI
+            updateAdminStats();
+            populateCountryFilter();
+            renderTable();
+        }
+
+        function exportData() {
+            const data = JSON.parse(localStorage.getItem('africaMapData') || '{"registrations":[]}');
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'africa-map-data-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (!data.registrations) {
+                            throw new Error('Invalid data format');
+                        }
+                        
+                        if (confirm(`This will add ${data.registrations.length} registrations. Continue?`)) {
+                            // Merge with existing data
+                            const existing = JSON.parse(localStorage.getItem('africaMapData') || '{"registrations":[]}');
+                            data.registrations.forEach(reg => {
+                                reg.id = Date.now() + Math.random(); // New ID
+                                existing.registrations.push(reg);
+                            });
+                            
+                            localStorage.setItem('africaMapData', JSON.stringify(existing));
+                            loadAdminData();
+                            alert('Data imported successfully!');
+                        }
+                    } catch (error) {
+                        alert('Error importing data: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+
+        function clearData() {
+            if (!confirm('WARNING: This will delete ALL registration data. Are you absolutely sure?')) return;
+            
+            localStorage.setItem('africaMapData', JSON.stringify({ registrations: [] }));
+            loadAdminData();
+            alert('All data has been cleared.');
+        }
+
+        function refreshAdminData() {
+            loadAdminData();
+            alert('Data refreshed!');
+        }
+
+        function resetDemoData() {
+            if (!confirm('Load demo data? This will replace current data.')) return;
+            
+            const demoData = {
+                registrations: [
+                    { id: 1, country: "Nigeria", name: "John", message: "Hello from Lagos!", timestamp: new Date(Date.now() - 3600000).toISOString() },
+                    { id: 2, country: "Ghana", name: "Sarah", message: "Greetings from Accra!", timestamp: new Date(Date.now() - 7200000).toISOString() },
+                    { id: 3, country: "South Africa", name: "David", message: "", timestamp: new Date(Date.now() - 10800000).toISOString() },
+                    { id: 4, country: "Kenya", name: "Lisa", message: "Karibu Kenya!", timestamp: new Date(Date.now() - 14400000).toISOString() },
+                    { id: 5, country: "Nigeria", name: "Michael", message: "Naija no dey carry last!", timestamp: new Date(Date.now() - 18000000).toISOString() },
+                    { id: 6, country: "Ethiopia", name: "Alem", message: "Welcome to Ethiopia!", timestamp: new Date(Date.now() - 21600000).toISOString() },
+                    { id: 7, country: "Egypt", name: "Omar", message: "From the pyramids!", timestamp: new Date(Date.now() - 25200000).toISOString() },
+                    { id: 8, country: "Tanzania", name: "Zawadi", message: "Karibu Tanzania!", timestamp: new Date(Date.now() - 28800000).toISOString() },
+                    { id: 9, country: "Rwanda", name: "Kwizera", message: "", timestamp: new Date(Date.now() - 32400000).toISOString() },
+                    { id: 10, country: "Senegal", name: "Amina", message: "Bienvenue!", timestamp: new Date(Date.now() - 36000000).toISOString() }
+                ]
+            };
+            
+            localStorage.setItem('africaMapData', JSON.stringify(demoData));
+            loadAdminData();
+            alert('Demo data loaded!');
+        }
+    </script>
+</body>
+</html>

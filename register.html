@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Your Country</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body class="register-page">
+    <div class="register-container">
+        <div class="register-header">
+            <h1><i class="fas fa-passport"></i> African Origins Registration</h1>
+            <p class="subtitle">Share where you're from in Africa</p>
+        </div>
+
+        <div class="qr-section">
+            <div class="qr-container">
+                <div class="qr-code" id="qrCode">
+                    <!-- QR code will be generated here -->
+                    <div class="qr-placeholder">
+                        <i class="fas fa-qrcode"></i>
+                        <p>Scan me with your phone</p>
+                    </div>
+                </div>
+                <div class="qr-instructions">
+                    <h3><i class="fas fa-mobile-alt"></i> How to Register:</h3>
+                    <ol>
+                        <li>Open your phone's camera app</li>
+                        <li>Point it at the QR code</li>
+                        <li>Tap the link that appears</li>
+                        <li>Select your African country</li>
+                        <li>Submit your response</li>
+                    </ol>
+                    <div class="direct-link">
+                        <p>Or visit directly:</p>
+                        <input type="text" id="directLink" readonly value="Loading...">
+                        <button onclick="copyLink()"><i class="far fa-copy"></i> Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section" id="formSection">
+            <h2><i class="fas fa-flag"></i> Select Your Country</h2>
+            <form id="countryForm">
+                <div class="form-group">
+                    <label for="country"><i class="fas fa-globe-africa"></i> African Country:</label>
+                    <select id="country" required>
+                        <option value="">-- Select your country --</option>
+                        <option value="Nigeria">Nigeria</option>
+                        <option value="Ghana">Ghana</option>
+                        <option value="South Africa">South Africa</option>
+                        <option value="Kenya">Kenya</option>
+                        <option value="Ethiopia">Ethiopia</option>
+                        <option value="Egypt">Egypt</option>
+                        <option value="Tanzania">Tanzania</option>
+                        <option value="Uganda">Uganda</option>
+                        <option value="Algeria">Algeria</option>
+                        <option value="Morocco">Morocco</option>
+                        <option value="Angola">Angola</option>
+                        <option value="Mozambique">Mozambique</option>
+                        <option value="Senegal">Senegal</option>
+                        <option value="Ivory Coast">Ivory Coast</option>
+                        <option value="Cameroon">Cameroon</option>
+                        <option value="Zambia">Zambia</option>
+                        <option value="Zimbabwe">Zimbabwe</option>
+                        <option value="Rwanda">Rwanda</option>
+                        <option value="Tunisia">Tunisia</option>
+                        <option value="Sudan">Sudan</option>
+                        <option value="Libya">Libya</option>
+                        <option value="DR Congo">DR Congo</option>
+                        <option value="Somalia">Somalia</option>
+                        <option value="Madagascar">Madagascar</option>
+                        <option value="Niger">Niger</option>
+                        <option value="Mali">Mali</option>
+                        <option value="Burkina Faso">Burkina Faso</option>
+                        <option value="Malawi">Malawi</option>
+                        <option value="Chad">Chad</option>
+                        <option value="Guinea">Guinea</option>
+                        <option value="Benin">Benin</option>
+                        <option value="Togo">Togo</option>
+                        <option value="Sierra Leone">Sierra Leone</option>
+                        <option value="Liberia">Liberia</option>
+                        <option value="Mauritania">Mauritania</option>
+                        <option value="Botswana">Botswana</option>
+                        <option value="Namibia">Namibia</option>
+                        <option value="Lesotho">Lesotho</option>
+                        <option value="Eswatini">Eswatini</option>
+                        <option value="Djibouti">Djibouti</option>
+                        <option value="Eritrea">Eritrea</option>
+                        <option value="Central African Republic">Central African Republic</option>
+                        <option value="Republic of Congo">Republic of Congo</option>
+                        <option value="Gabon">Gabon</option>
+                        <option value="Equatorial Guinea">Equatorial Guinea</option>
+                        <option value="São Tomé and Príncipe">São Tomé and Príncipe</option>
+                        <option value="Burundi">Burundi</option>
+                        <option value="Comoros">Comoros</option>
+                        <option value="Mauritius">Mauritius</option>
+                        <option value="Seychelles">Seychelles</option>
+                        <option value="Cape Verde">Cape Verde</option>
+                        <option value="Gambia">Gambia</option>
+                        <option value="Guinea-Bissau">Guinea-Bissau</option>
+                        <option value="South Sudan">South Sudan</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-user"></i> Your Name (Optional):</label>
+                    <input type="text" id="name" placeholder="Enter your name">
+                </div>
+
+                <div class="form-group">
+                    <label for="message"><i class="fas fa-comment"></i> Message (Optional):</label>
+                    <textarea id="message" placeholder="Share a greeting or message"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-paper-plane"></i> Submit My Country
+                </button>
+            </form>
+        </div>
+
+        <div class="success-message" id="successMessage" style="display: none;">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Thank You!</h2>
+            <p>Your country has been added to the map.</p>
+            <p>Check the live display to see your contribution.</p>
+            <a href="index.html" class="view-map-btn">
+                <i class="fas fa-map"></i> View Live Map
+            </a>
+            <button onclick="resetForm()" class="register-again-btn">
+                <i class="fas fa-redo"></i> Register Another Person
+            </button>
+        </div>
+
+        <div class="footer-links">
+            <a href="index.html"><i class="fas fa-eye"></i> View Live Map</a>
+            <span class="divider">|</span>
+            <a href="admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Generate QR code on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generate QR code
+            const qrElement = document.getElementById('qrCode');
+            const currentUrl = window.location.href;
+            
+            // Clear placeholder
+            qrElement.innerHTML = '';
+            
+            // Create canvas for QR code
+            const canvas = document.createElement('canvas');
+            qrElement.appendChild(canvas);
+            
+            QRCode.toCanvas(canvas, currentUrl, {
+                width: 200,
+                height: 200,
+                margin: 1,
+                color: {
+                    dark: '#1a237e',
+                    light: '#ffffff'
+                }
+            }, function(error) {
+                if (error) console.error(error);
+            });
+            
+            // Set direct link
+            document.getElementById('directLink').value = currentUrl;
+            
+            // Handle form submission
+            document.getElementById('countryForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const country = document.getElementById('country').value;
+                const name = document.getElementById('name').value || 'Anonymous';
+                const message = document.getElementById('message').value;
+                
+                if (!country) {
+                    alert('Please select a country');
+                    return;
+                }
+                
+                // Register the country
+                registerCountry(country, name, message);
+                
+                // Show success message
+                document.getElementById('formSection').style.display = 'none';
+                document.getElementById('successMessage').style.display = 'block';
+            });
+        });
+        
+        function copyLink() {
+            const linkInput = document.getElementById('directLink');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(linkInput.value);
+            alert('Link copied to clipboard!');
+        }
+        
+        function resetForm() {
+            document.getElementById('countryForm').reset();
+            document.getElementById('formSection').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function registerCountry(country, name, message) {
+            // Get existing data or initialize
+            let data = JSON.parse(localStorage.getItem('africaMapData') || '{"registrations":[]}');
+            
+            // Create new registration
+            const registration = {
+                country: country,
+                name: name,
+                message: message,
+                timestamp: new Date().toISOString(),
+                id: Date.now()
+            };
+            
+            // Add to data
+            data.registrations.push(registration);
+            
+            // Save back to localStorage
+            localStorage.setItem('africaMapData', JSON.stringify(data));
+            
+            console.log('Registered:', registration);
+            
+            // Show confirmation
+            alert(`Thank you ${name}! Your country (${country}) has been added to the map.`);
+        }
+    </script>
+</body>
+</html>
